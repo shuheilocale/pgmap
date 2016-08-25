@@ -8,15 +8,124 @@
   </head>
   <body>
     <div id="map"></div>
+
+    <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s=" crossorigin="anonymous"></script>
     <script type="text/javascript">
 
 var map;
+var markers = [];
+var infoWindows = [];
+
+
+var currentLocation = { 'lat': 33.585662, 'lng': 130.425360 }
+
 function initMap() {
+
   map = new google.maps.Map(document.getElementById('map'), {
-    center: {lat: -34.397, lng: 150.644},
-    zoom: 8
+    center: currentLocation,
+    scrollwheel: true,
+    zoom: 14,
+    mapTypeId: google.maps.MapTypeId.TERRAIN
+  });
+
+  google.maps.event.addListener(map, 'click', function(event){
+
+    currentLocation = {
+      lat: event.latLng.lat(),
+      lng: event.latLng.lng()
+    };
+
+    getPokeLocations();
+
+  });
+
+  var infoWindow = new google.maps.InfoWindow({map: map});
+
+  getPokeLocations();
+
+}
+
+function getPokeLocations() {
+
+  for (var i = 0; i < markers.length; i++) {
+    markers[i].setMap(null);
+  }
+  $.ajax({
+    type: 'GET',
+    url: 'https://pokeguideclub.herokuapp.com',
+    dataType: 'json',
+    data: {
+      latitude: currentLocation.lat,
+      longitude: currentLocation.lng
+    },
+    success: function(response) {
+
+      markers[0] = new google.maps.Marker({
+        map: map,
+        position: currentLocation,
+        title: 'Hello World!'
+      });
+
+      map.setCenter(currentLocation);
+
+      var result = response.result;
+      for (var i = 0; i < result.length; i++) {
+
+        var pokemon = result[i];
+
+        var markerLatLng = new google.maps.LatLng({lat: pokemon.latitude, lng: pokemon.longitude});
+
+        markers[i+1] = new google.maps.Marker({
+          position: markerLatLng,
+          map: map,
+          options: {
+            icon: {
+              url: 'https://pokeguide.club/images/pokemons/' + pokemon.pokemon_id + '.png'
+            }
+          },
+          pokemon: pokemon
+        });
+
+        var date = new Date(pokemon.expires * 1000);
+        var hours = date.getHours();
+        var minutes = "0" + date.getMinutes();
+        var seconds = "0" + date.getSeconds();
+
+        var formattedTime = 'Until ' + hours + ':' + minutes.substr(-2);
+
+        infoWindows[i+1] = new google.maps.InfoWindow({
+          content: '<div style="color: black;">' + formattedTime + '</div>'
+        });
+
+        markerEvent(i+1);
+      }
+
+    },
+    error: function(response) {
+        console.log(response);
+    }
+  });
+
+  function markerEvent(i) {
+  markers[i].addListener('click', function() {
+    infoWindows[i].open(map, markers[i]);
   });
 }
+
+
+setInterval(function() {
+
+  for (var i = 1; i < markers.length; i++) {
+
+    if (new Date().getTime() > markers[i].pokemon.disappear_time) {
+
+      markers[i].setMap(null);
+
+    }
+  }
+
+}, 5000);
+
 
     </script>
     <script async defer
