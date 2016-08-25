@@ -105,25 +105,24 @@ function getPokeLocations() {
         console.log(response);
     }
   });
+}
 
-  function markerEvent(i) {
+function markerEvent(i) {
   markers[i].addListener('click', function() {
     infoWindows[i].open(map, markers[i]);
   });
 }
 
+function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+  getPokeLocations();
+}
 
 setInterval(function() {
-
   for (var i = 1; i < markers.length; i++) {
-
     if (new Date().getTime() > markers[i].pokemon.disappear_time) {
-
       markers[i].setMap(null);
-
     }
   }
-
 }, 5000);
 
 
